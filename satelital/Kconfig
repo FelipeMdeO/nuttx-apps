@@ -1,0 +1,21 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config SATELITAL_STX3_MODULE
+	bool "STX3 Satellite Module"
+	default n
+	---help---
+		The STX3 Satellite Module offers robust satellite
+		connectivity through Globalstar's advanced STX3 technology. Designed
+		for reliable communication in remote and challenging environments,
+		this module enables seamless data transmission and reception between
+		the device and Globalstar's satellite network. It supports UART
+		communication protocols, ensuring compatibility and flexibility for
+		various applications such as IoT devices, asset tracking, and remote
+		monitoring systems. The STX3 module utilizes efficient power
+		management and secure data transfer methods to maintain continuous
+		and dependable satellite connections, making it an essential component
+		for enhancing connectivity in areas with limited or no terrestrial
+		network coverage.
