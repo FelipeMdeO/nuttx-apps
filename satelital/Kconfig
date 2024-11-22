@@ -3,9 +3,12 @@
 # see the file kconfig-language.txt in the NuttX tools repository.
 #
 
-config SATELITAL_STX3_MODULE
-	bool "STX3 Satellite Module"
+menu "Satelital"
+
+menuconfig  SATELITAL_STX3_MODULE
+	tristate "Global Star STX3 Satellite Module"
 	default n
+
 	---help---
 		The STX3 Satellite Module offers robust satellite
 		connectivity through Globalstar's advanced STX3 technology. Designed
@@ -19,3 +22,66 @@ config SATELITAL_STX3_MODULE
 		and dependable satellite connections, making it an essential component
 		for enhancing connectivity in areas with limited or no terrestrial
 		network coverage.
+
+if SATELITAL_STX3_MODULE
+
+config STX3_UART_DEVNAME
+	string "device name"
+	default "/dev/ttyS1"
+	---help---
+		Select the UART port to use with the STX3 Satellite Module.
+
+config SATELITAL_STX3_PROGNAME
+	string "Program name"
+	default "stx3"
+	---help---
+		This is the name of the program that will be used when the ELF
+		program is installed.
+
+config SATELITAL_STX3_PRIORITY
+	int "Task priority"
+	default 100
+
+config SATELITAL_STX3_STACKSIZE
+	int "Stack size"
+	default DEFAULT_TASK_STACKSIZE
+
+config STX3_RESET_DEVNAME
+	string "reset device name"
+	default "/dev/gpio0"
+	---help---
+		Select the device name for the reset pin of the STX3 Satellite Module.
+
+config STX3_CHANNEL
+	int "Channel"
+	default 2
+	---help---
+		Select the channel to use with the STX3 Satellite Module. (default 2)
+		0 = Channel A
+		1 = Channel B
+		2 = Channel C
+		3 = Channel D
+
+config STX_NUM_BURSTS
+	int "Number of bursts"
+	default 3
+	---help---
+		Select the number of bursts to use with the STX3 Satellite Module. (default 3)
+
+config STX3_MIN_INTERVAL
+	int "Minimum interval"
+	default 60
+	---help---
+		Select the minimum interval to use with the STX3 Satellite Module.
+		60 x 5 = 300 seconds = 5 minutes
+
+config STX3_MAX_INTERVAL
+	int "Maximum interval"
+	default 120
+	---help---
+		Select the maximum interval to use with the STX3 Satellite Module.
+		120 x 5 = 600 seconds = 10 minutes
+
+endif # SATELITAL_STX3_MODULE
+
+endmenu # Satelital

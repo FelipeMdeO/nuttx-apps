@@ -1,5 +1,5 @@
 ############################################################################
-# apps/industry/abnt_codi/Makefile
+# apps/satelital/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -22,7 +22,11 @@ include $(APPDIR)/Make.defs
 
 # NSH Library
 
-CSRCS   = stx3.c
-CFLAGS += -std=c99
+CSRCS   = stx3.c stx3_main.c
+
+PROGNAME  = $(CONFIG_STX3_PROGNAME)
+PRIORITY  = $(CONFIG_STX3_PRIORITY)
+STACKSIZE = $(CONFIG_STX3_STACKSIZE)
+MODULE    = $(CONFIG_SATELITAL_STX3)
 
 include $(APPDIR)/Application.mk

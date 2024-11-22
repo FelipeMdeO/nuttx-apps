@@ -21,7 +21,6 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include <nuttx/config.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -33,6 +32,9 @@
 #include <unistd.h>
 
 #include "stx3.h"
+
+#define OK 0
+#define ERROR -1
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -61,7 +63,7 @@
 #define PAYLOAD_LEN                 9U
 #define CRC_LEN                     2U
 
-#define STX3_DEVNAME "/dev/ttyS1" //CONFIG_STX3_UART_DEVNAME
+#define STX3_DEVNAME  "/dev/pts/13" //"/dev/ttyS1" //CONFIG_STX3_UART_DEVNAME
 
 typedef enum {
     BURST_RUNNING,
@@ -73,13 +75,11 @@ typedef enum {
  * Private Data
  ****************************************************************************/
 
-static bool stx3_is_initialized = false;
-
 /****************************************************************************
  * Private Functions Prototypes
  ****************************************************************************/
 
-uint16_t inline crc16_lsb_calc(const uint8_t *src, uint8_t size);
+static inline uint16_t crc16_lsb_calc(const uint8_t *src, uint8_t size);
 static inline bool stx3_crc_is_valid(const uint8_t *response_ptr, uint8_t response_length);
 static bool stx3_exchange(const uint8_t command_len, const uint8_t *command_ptr,
                            const uint8_t response_len, uint8_t *response_ptr);
@@ -88,7 +88,7 @@ static bool send_uart_data(const uint8_t *data, size_t len);
 static bool read_uart_data(uint8_t *data, size_t len);
 static inline void stx3_disable(void);
 static inline void stx3_enable(void);
-
+static void print_buffer_hex(const uint8_t *buffer, size_t size);
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -103,8 +103,9 @@ static inline void stx3_enable(void)
     printf("stx3_enable called\n");
 }
 
-uint16_t inline crc16_lsb_calc(const uint8_t *src, uint8_t size)
+static inline uint16_t crc16_lsb_calc(const uint8_t *src, uint8_t size)
 {
+
   uint16_t data;
   uint16_t crc;
   uint8_t i;
@@ -115,7 +116,7 @@ uint16_t inline crc16_lsb_calc(const uint8_t *src, uint8_t size)
   }
 
   data = 0U;
-  crc = UINT16_MAX;
+  crc = 0xFFFF;
 
   do
   {
@@ -131,20 +132,27 @@ uint16_t inline crc16_lsb_calc(const uint8_t *src, uint8_t size)
     }
   } 
   while (--size);
-
   return ~crc;
 }
 
 static inline bool stx3_crc_is_valid(const uint8_t *response_ptr, uint8_t response_length)
 {
   uint16_t calc_crc;
-  uint16_t resp_crc; 
+  uint16_t resp_crc;
 
-  calc_crc = crc16_lsb_calc(response_ptr, ((uint8_t)(response_length - CRC_LEN)));
+  calc_crc = crc16_lsb_calc(response_ptr, (response_length - CRC_LEN) );
   resp_crc = (uint16_t)(((uint16_t)response_ptr[(response_length - 1U)] << 8) | 
                         (uint16_t)response_ptr[response_length - CRC_LEN]);
 
-  return (calc_crc == resp_crc);
+  if (calc_crc == resp_crc) 
+  { 
+    printf("CRC is valid\n");
+    return OK;
+  } 
+  
+  printf("calc_crc: %04X, resp_crc: %04X\n", calc_crc, resp_crc);
+  printf("CRC is invalid\n");
+  return ERROR;
 }
 
 static bool send_uart_data(const uint8_t *data, size_t len)
@@ -184,7 +192,7 @@ static bool read_uart_data(uint8_t *data, size_t len)
       return ERROR;
   }
 
-   bytes_read = read(fd, data, len);
+  bytes_read = read(fd, data, len);
   
   if (bytes_read != (ssize_t)len)
   {
@@ -200,18 +208,27 @@ static bool read_uart_data(uint8_t *data, size_t len)
 static bool stx3_exchange(const uint8_t command_len, const uint8_t *command_ptr,
                           const uint8_t response_len, uint8_t *response_ptr)
 {
-  if (!send_uart_data(command_ptr, command_len))
+
+  if (send_uart_data(command_ptr, command_len) != OK)
   {
+    printf("Error sending data\n");
     return false;
   }
 
-  if (!read_uart_data(response_ptr, response_len))
+  if (read_uart_data(response_ptr, response_len) != OK)
   {
+    printf("Error reading data\n");
     return false;
   }
+
+  printf("Sending : ");
+  print_buffer_hex(command_ptr, command_len);
+  printf("Received: ");
+  print_buffer_hex(response_ptr, response_len);
+
+  //printf("Crc is %s\n", stx3_crc_is_valid(response_ptr, response_len)==OK ? "valid" : "invalid");
 
   return stx3_crc_is_valid(response_ptr, response_len);
-
 }
 
 static STX3_BURST_STATES stx3_get_burst_state(void)
@@ -224,21 +241,36 @@ static STX3_BURST_STATES stx3_get_burst_state(void)
 
   /* Check if communication was successful and CRC is valid */
 
-  if ( stx3_exchange(COMMAND_SIZE_BURST_STATE, query_bursts_remaining_cmd, RESPONSE_SIZE_BURST_STATE, response) )
+  if ( stx3_exchange(COMMAND_SIZE_BURST_STATE, query_bursts_remaining_cmd, RESPONSE_SIZE_BURST_STATE, response) == OK)
   {
     bursts_remaining = response[3];
+    printf("burst value is %d\n", bursts_remaining);
 
     if (bursts_remaining > 0)
     {
+      printf("Bursts remaining: %d\n", bursts_remaining);
       return BURST_RUNNING;
     }
+
     else
     {
+      printf("Bursts available\n");
       return BURST_AVAILABLE;
     }        
   }
 
+  printf("Error getting burst state\n");
   return BURST_ERROR;
+}
+
+static void print_buffer_hex(const uint8_t *buffer, size_t size)
+{
+  for (size_t i = 0; i < size; i++)
+  {
+    printf("%02X ", buffer[i]);
+  }
+  
+  printf("\n");
 }
 
 /****************************************************************************
@@ -279,7 +311,9 @@ int stx3_new_burst(const uint8_t *payload_ptr, uint8_t payload_len)
     send_data_cmd[12U] = (uint8_t)(crc & 0xFF);        // CRC low byte
     send_data_cmd[13U] = (uint8_t)((crc >> 8) & 0xFF); // CRC high
 
-    if ( stx3_exchange(COMMAND_SIZE_NEW_BURST, send_data_cmd, RESPONSE_SIZE_NEW_BURST, response) )
+    print_buffer_hex(send_data_cmd, COMMAND_SIZE_NEW_BURST);
+
+    if ( stx3_exchange(COMMAND_SIZE_NEW_BURST, send_data_cmd, RESPONSE_SIZE_NEW_BURST, response) == OK )
     {
         return OK;
     }
@@ -290,51 +324,40 @@ int stx3_new_burst(const uint8_t *payload_ptr, uint8_t payload_len)
 
 int stx3_abort_burst(void)
 {
-    /* Command to abort the burst transmission */
-    const uint8_t abort_burst_cmd[COMMAND_SIZE_ABORT_BURST] = { 0xAA, 0x05, 0x03, 0x42, 0xF6 };
-    uint8_t response[RESPONSE_SIZE_ABORT_BURST]             = {0};
+  /* Command to abort the burst transmission */
 
-    if (stx3_is_initialized == false)
-    {
-        printf("Module not configured\n");
-        return ERROR;
-    }
+  const uint8_t abort_burst_cmd[COMMAND_SIZE_ABORT_BURST] = { 0xAA, 0x05, 0x03, 0x42, 0xF6 };
+  uint8_t response[RESPONSE_SIZE_ABORT_BURST]             = {0};
 
-    /* Check if communication was successful and CRC is valid */
+  /* Check if communication was successful and CRC is valid */
 
-    if ( stx3_exchange(COMMAND_SIZE_ABORT_BURST, abort_burst_cmd, RESPONSE_SIZE_ABORT_BURST, response) )
-    {
-        return OK;
-    }
+  if ( stx3_exchange(COMMAND_SIZE_ABORT_BURST, abort_burst_cmd, RESPONSE_SIZE_ABORT_BURST, response) == OK)
+  {
+      return OK;
+  }
 
-    return ERROR;
+  return ERROR;
 }
 
 uint32_t stx3_get_esn(void) 
 {
 
-    if (stx3_is_initialized == false) 
-    {
-        printf("STX3 module is not initialized, inializing it\n");
-        return __UINT32_MAX__;
-    }
+  /* Command to request the ESN */
 
-    /* Command to request the ESN */
+  const uint8_t query_esn_cmd[COMMAND_SIZE_GET_ESN]   = { 0xAA, 0x05, 0x01, 0x50, 0xD5 };
+  uint8_t response[RESPONSE_SIZE_GET_ESN]             = {0};
+  
+  /* Check if communication was successful and CRC is valid */
 
-    const uint8_t query_esn_cmd[COMMAND_SIZE_GET_ESN]   = { 0xAA, 0x05, 0x01, 0x50, 0xD5 };
-    uint8_t response[RESPONSE_SIZE_GET_ESN]             = {0};
-    
-    /* Check if communication was successful and CRC is valid */
+  if ( stx3_exchange(COMMAND_SIZE_GET_ESN, query_esn_cmd, RESPONSE_SIZE_GET_ESN, response) == OK ) 
+  {
+      /* Extract the ESN from the response */
 
-    if ( stx3_exchange(COMMAND_SIZE_GET_ESN, query_esn_cmd, RESPONSE_SIZE_GET_ESN, response) ) 
-    {
-        /* Extract the ESN from the response */
+      return ((uint32_t)(response[3U] << 24) | (response[4U] << 16) | (response[5U] << 8) | response[6U]);
 
-        return ((uint32_t)(response[3U] << 24) | (response[4U] << 16) | (response[5U] << 8) | response[6U]);
+  }
 
-    }
-
-    return __UINT32_MAX__;
+  return __UINT32_MAX__;
 }
 
 void stx3_reset(void)
@@ -375,12 +398,9 @@ int stx3_configure(uint8_t channel, uint8_t num_bursts, uint8_t min_interval, ui
   setup_cmd[12U] = (uint8_t)(crc & 0xFF);        // CRC low byte
   setup_cmd[13U] = (uint8_t)((crc >> 8) & 0xFF); // CRC high
 
-  if (stx3_exchange(COMMAND_SIZE_SETUP, setup_cmd, RESPONSE_SIZE_SETUP, response) == true)
+  if (stx3_exchange(COMMAND_SIZE_SETUP, setup_cmd, RESPONSE_SIZE_SETUP, response) == OK)
   {
-    if (stx3_crc_is_valid(response, RESPONSE_SIZE_SETUP))
-    {
-      return OK;
-    }
+    return OK;
   }
 
   return -EXIT_FAILURE; 
