@@ -41,14 +41,14 @@
  * Public Types
  ****************************************************************************/
 
-typedef int (*cmd_t)(int argc, FAR char **argv);
+typedef int (*cmd_t)(int argc, char **argv);
 
 struct cmdmap_s
 {
-  FAR const char *cmd;        /* Name of the command */
+  const char *cmd;        /* Name of the command */
   cmd_t           handler;    /* Function that handles the command */
-  FAR const char *desc;       /* Short description */
-  FAR const char *usage;      /* Usage instructions for 'help' command */
+  const char *desc;       /* Short description */
+  const char *usage;      /* Usage instructions for 'help' command */
 };
 
 /****************************************************************************

@@ -22,6 +22,7 @@
  * Included Files
  ****************************************************************************/
 #include <nuttx/config.h>
+#include <debug.h>
 
 #include <stdint.h>
 #include <stdio.h>
@@ -32,7 +33,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <errno.h>
-#include <debug.h>
+#include <ctype.h>
 
 #include "stx3.h"
 
@@ -57,6 +58,8 @@ const char g_stx3cmdfailed[]       =
 const char g_stx3xfrerror[]        =
            "stx3tool: %s: Transfer failed: %d\n";
 
+#define MIN_BYTES 9
+#define MAX_BYTES 144
 
 /****************************************************************************
  * Private Functions
@@ -68,7 +71,7 @@ const char g_stx3xfrerror[]        =
 
 static int stx3_cmd_help(int argc, char **argv);
 static int stx3_cmd_new_burst(int argc, char **argv);
-static int stx3_cmd_get_esn(int argc, char **argv);
+static uint32_t stx3_cmd_get_esn(int argc, char **argv);
 static int stx3_cmd_abort_burst(int argc, char **argv);
 static int stx3_cmd_reset(int argc, char **argv);
 static int stx3_cmd_configure(int argc, char **argv);
@@ -87,12 +90,33 @@ static int stx3_cmd_configure(int argc, char **argv);
 
 static int stx3_cmd_help(int argc, char **argv)
 {
-    printf("Usage stx3 <cmd> [arguments]:                                   \n");
-    printf("  stx3 [-s] <9 bytes hex data>  - Execute new burst command     \n");
-    printf("  stx3 [-e]                     - Get ESN                       \n");
-    printf("  stx3 [-a]                     - Abort current burst           \n");
-    printf("  stx3 [-r]                     - Recovery to factory config    \n");
-    printf("  stx3 [-c] <channel> <num_burts> <min_internval> <max interval>\n");
+    (void)argc;
+    (void)argv;
+
+    printf("Usage: ./stx3tool <option> [arguments]\n\n");
+    printf("Options:\n");
+
+    printf("  -s <byte_count> <byte1> <byte2> ... <byteN>\tExecute the 'new burst' command.\n");
+    printf("      <byte_count>: Number of bytes to send (minimum %d, maximum %d).\n", MIN_BYTES, MAX_BYTES);
+    printf("      <byte1> to <byteN>: Bytes to be sent, each represented by two hexadecimal digits.\n");
+    printf("      Example: ./stx3tool -s 9 01 02 03 04 05 06 07 08 09\n\n");
+
+    printf("  -e\t\t\t\t\tRetrieve the ESN.\n");
+    printf("      Usage: ./stx3tool -e\n\n");
+
+    printf("  -a\t\t\t\t\tAbort the current burst.\n");
+    printf("      Usage: ./stx3tool -a\n\n");
+
+    printf("  -r\t\t\t\t\tReset the device to factory settings.\n");
+    printf("      Usage: ./stx3tool -r\n\n");
+
+    printf("  -c <channel> <num_bursts> <min_interval> <max_interval>\tConfigure the device.\n");
+    printf("      <channel>: Channel number for configuration.\n");
+    printf("      <num_bursts>: Number of bursts to configure.\n");
+    printf("      <min_interval>: Minimum interval between bursts.\n");
+    printf("      <max_interval>: Maximum interval between bursts.\n");
+    printf("      Usage: ./stx3tool -c <channel> <num_bursts> <min_interval> <max_interval>\n\n");
+
     return OK;
 }
 
@@ -100,32 +124,67 @@ static int stx3_cmd_help(int argc, char **argv)
  * Name: stx3_cmd_new_burst
  ****************************************************************************/
 
-static int stx3_cmd_new_burst(int argc, char **argv)
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define SUCCESS 0
+#define ERROR -1
+
+/**
+ * @brief Displays a hex dump of the given data.
+ *
+ * @param data Pointer to the byte array.
+ * @param len Number of bytes to display.
+ */
+
+void hex_dump(const unsigned char *data, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    printf("\n");
+}
+
+int stx3_cmd_new_burst(int byte_count, char *bytes[])
 {
-    uint8_t data[9];
-    int i;
+    int ret;
 
-    /* 9 bytes hex = 18 characters */
-
-    if (argc != 2 || strlen(argv[1]) != 18 ||
-        strspn(argv[1], "0123456789abcdefABCDEF") != 18) 
+    unsigned char *byte_values = calloc(byte_count, sizeof(unsigned char));
+    if (!byte_values)
     {
-        for (i = 0; i < 9; i++) {
-            sscanf(&argv[1][i * 2], "%2hhx", &data[i]);
-        }
-        printf(g_stx3arginvalid, "new_burst");
+        printf("Memory allocation file.\n");
         return ERROR;
     }
 
-    // Call the function to handle new burst with the provided hex data
-    return stx3_new_burst(data, 9U);
+    for (int i = 0; i < byte_count; i++)
+    {
+        char *endptr;
+        long val = strtol(bytes[i], &endptr, 16);
+
+        if (*endptr != '\0' || val < 0x00 || val > 0xFF)
+        {
+            printf("Invalid Byte %d: %s\n", i + 1, bytes[i]);
+            free(byte_values);
+            return ERROR;
+        }
+
+        byte_values[i] = (unsigned char)val;
+        hex_dump(byte_values, byte_count);
+        printf("Byte %d: 0x%02X\n", i + 1, byte_values[i]);
+    }
+
+    ret = stx3_new_burst(byte_values, byte_count);
+    free(byte_values);
+
+    return ret;
 }
 
 /****************************************************************************
  * Name: stx3_cmd_get_esn
  ****************************************************************************/
 
-static int stx3_cmd_get_esn(int argc, char **argv)
+static uint32_t stx3_cmd_get_esn(int argc, char **argv)
 {
     return stx3_get_esn();
 }
@@ -160,10 +219,10 @@ static int stx3_cmd_configure(int argc, char **argv)
     uint8_t min_interval;
     uint8_t max_interval;
 
-    channel = atoi(argv[1]);
-    num_bursts = atoi(argv[2]);
-    min_interval = atoi(argv[3]);
-    max_interval = atoi(argv[4]);
+    channel = atoi(argv[0]);
+    num_bursts = atoi(argv[1]);
+    min_interval = atoi(argv[2]);
+    max_interval = atoi(argv[3]);
 
     return stx3_configure(channel, num_bursts, min_interval, max_interval);
 }
@@ -187,12 +246,51 @@ static int stx3_execute(int argc, char *argv[])
     switch (argv[1][1])
     {
         case 's':
-            if (argc != 3)
+        {
+            if (argc < 3)
             {
                 printf(g_stx3argrequired, "new_burst");
                 return ERROR;
             }
-            return stx3_cmd_new_burst(argc - 2, &argv[2]);
+
+            char *endptr;
+            long byte_count = strtol(argv[2], &endptr, 10);
+
+            if (*endptr != '\0')
+            {
+                printf("Invalid byte count: %s. It must be an integer between %d and %d.\n", argv[2], MIN_BYTES, MAX_BYTES);
+                return ERROR;
+            }
+
+            if (byte_count < MIN_BYTES || byte_count > MAX_BYTES)
+            {
+                printf("Number of bytes outside the permitted range: %ld. Must be between %d and %d.\n", byte_count, MIN_BYTES, MAX_BYTES);
+                return ERROR;
+            }
+
+            int expected_argc = 3 + (int)byte_count; // ./stx3tool -s <byte_count> <bytes...>
+
+            if (argc != expected_argc)
+            {
+                printf(g_stx3arginvalid, "new_burst");
+                printf("Right Use: ./stx3tool -s %ld <byte1> <byte2> ... <byte%ld>\n", byte_count, byte_count);
+                return ERROR;
+            }
+
+            // Valida cada byte fornecido
+            for (int i = 3; i < argc; i++)
+            {
+                if (strlen(argv[i]) != 2 || 
+                    !isxdigit(argv[i][0]) || 
+                    !isxdigit(argv[i][1]))
+                {
+                    printf("Invalid byte at position %d: %s. Each byte must be represented by two hexadecimal digits.\n", i - 2, argv[i]);
+                    return ERROR;
+                }
+            }
+
+            return stx3_cmd_new_burst((int)byte_count, &argv[3]);
+        }
         case 'e':
             if (argc != 2)
             {
@@ -226,7 +324,7 @@ static int stx3_execute(int argc, char *argv[])
     }
 }
 
-int main(int argc, FAR char *argv[])
+int main(int argc, char *argv[])
 {  
     return stx3_execute(argc, argv);
 }

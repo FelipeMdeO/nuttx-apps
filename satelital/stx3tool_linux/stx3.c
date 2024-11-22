@@ -131,6 +131,7 @@ static inline uint16_t crc16_lsb_calc(const uint8_t *src, uint8_t size)
     }
   } 
   while (--size);
+
   return ~crc;
 }
 
@@ -210,13 +211,11 @@ static bool stx3_exchange(const uint8_t command_len, const uint8_t *command_ptr,
 
   if (send_uart_data(command_ptr, command_len) != OK)
   {
-    printf("Error sending data\n");
     return false;
   }
 
   if (read_uart_data(response_ptr, response_len) != OK)
   {
-    printf("Error reading data\n");
     return false;
   }
 
@@ -241,7 +240,6 @@ static STX3_BURST_STATES stx3_get_burst_state(void)
   if ( stx3_exchange(COMMAND_SIZE_BURST_STATE, query_bursts_remaining_cmd, RESPONSE_SIZE_BURST_STATE, response) == OK)
   {
     bursts_remaining = response[3];
-    printf("burst value is %d\n", bursts_remaining);
 
     if (bursts_remaining > 0)
     {
@@ -302,7 +300,7 @@ int stx3_new_burst(const uint8_t *payload_ptr, uint8_t payload_len)
     return ERROR;
   }
 
-  /* Add preamblie size and crc size to payload len */
+  /* Add preamble size and crc size to payload len */
 
   message_size = payload_len + 1 + 2;
 
