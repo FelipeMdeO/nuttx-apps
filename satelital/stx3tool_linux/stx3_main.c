@@ -141,6 +141,7 @@ static int stx3_cmd_help(int argc, char **argv)
  * @param data Pointer to the byte array.
  * @param len Number of bytes to display.
  */
+
 void hex_dump(const unsigned char *data, int len) {
     for (int i = 0; i < len; i++) {
         printf("%02X ", data[i]);
@@ -153,16 +154,13 @@ int stx3_cmd_new_burst(int byte_count, char *bytes[])
 {
     int ret;
 
-    printf("Iniciando 'new_burst' com %d bytes:\n", byte_count);
-
     unsigned char *byte_values = calloc(byte_count, sizeof(unsigned char));
     if (!byte_values)
     {
-        printf("Falha na alocação de memória para byte_values.\n");
+        printf("Memory allocation file.\n");
         return ERROR;
     }
 
-    // Converte os bytes de string para valores numéricos
     for (int i = 0; i < byte_count; i++)
     {
         char *endptr;
@@ -170,7 +168,7 @@ int stx3_cmd_new_burst(int byte_count, char *bytes[])
 
         if (*endptr != '\0' || val < 0x00 || val > 0xFF)
         {
-            printf("Byte inválido na posição %d: %s\n", i + 1, bytes[i]);
+            printf("Invalid Byte %d: %s\n", i + 1, bytes[i]);
             free(byte_values);
             return ERROR;
         }
@@ -179,8 +177,6 @@ int stx3_cmd_new_burst(int byte_count, char *bytes[])
         hex_dump(byte_values, byte_count);
         printf("Byte %d: 0x%02X\n", i + 1, byte_values[i]);
     }
-
-    printf("'new_burst' executado com sucesso.\n");
 
     ret = stx3_new_burst(byte_values, byte_count);
     free(byte_values);
@@ -255,55 +251,48 @@ static int stx3_execute(int argc, char *argv[])
     {
         case 's':
         {
-            // Para a opção '-s', espera-se que o próximo argumento seja o número de bytes
             if (argc < 3)
             {
                 printf(g_stx3argrequired, "new_burst");
                 return ERROR;
             }
 
-            // Tenta converter o segundo argumento para um inteiro
             char *endptr;
             long byte_count = strtol(argv[2], &endptr, 10);
 
-            // Verifica se a conversão foi bem-sucedida e se o valor está dentro dos limites permitidos
             if (*endptr != '\0')
             {
-                printf("Número de bytes inválido: %s. Deve ser um número inteiro entre %d e %d.\n", argv[2], MIN_BYTES, MAX_BYTES);
+                printf("Invalid byte count: %s. It must be an integer between %d and %d.\n", argv[2], MIN_BYTES, MAX_BYTES);
                 return ERROR;
             }
 
             if (byte_count < MIN_BYTES || byte_count > MAX_BYTES)
             {
-                printf("Número de bytes fora do intervalo permitido: %ld. Deve estar entre %d e %d.\n", byte_count, MIN_BYTES, MAX_BYTES);
+                printf("Number of bytes outside the permitted range: %ld. Must be between %d and %d.\n", byte_count, MIN_BYTES, MAX_BYTES);
                 return ERROR;
             }
 
-            // Calcula o número total de argumentos esperados
             int expected_argc = 3 + (int)byte_count; // ./stx3tool -s <byte_count> <bytes...>
 
             if (argc != expected_argc)
             {
                 printf(g_stx3arginvalid, "new_burst");
-                printf("Uso correto: ./stx3tool -s %ld <byte1> <byte2> ... <byte%ld>\n", byte_count, byte_count);
+                printf("Right Use: ./stx3tool -s %ld <byte1> <byte2> ... <byte%ld>\n", byte_count, byte_count);
                 return ERROR;
             }
 
             // Valida cada byte fornecido
             for (int i = 3; i < argc; i++)
             {
-                // Exemplo de validação simples: verificar se cada byte é um número hexadecimal válido de dois dígitos
                 if (strlen(argv[i]) != 2 || 
                     !isxdigit(argv[i][0]) || 
                     !isxdigit(argv[i][1]))
                 {
-                    printf("Byte inválido na posição %d: %s. Cada byte deve ser representado por dois dígitos hexadecimais.\n", i - 2, argv[i]);
+                    printf("Invalid byte at position %d: %s. Each byte must be represented by two hexadecimal digits.\n", i - 2, argv[i]);
                     return ERROR;
                 }
             }
 
-            // Chama a função 'stx3_cmd_new_burst' com os argumentos ajustados
-            // Passa byte_count e os bytes a partir de argv[3]
             return stx3_cmd_new_burst((int)byte_count, &argv[3]);
         }
         case 'e':

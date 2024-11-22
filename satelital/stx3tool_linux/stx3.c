@@ -225,8 +225,6 @@ static bool stx3_exchange(const uint8_t command_len, const uint8_t *command_ptr,
   printf("Received: ");
   print_buffer_hex(response_ptr, response_len);
 
-  //printf("Crc is %s\n", stx3_crc_is_valid(response_ptr, response_len)==OK ? "valid" : "invalid");
-
   return stx3_crc_is_valid(response_ptr, response_len);
 }
 
