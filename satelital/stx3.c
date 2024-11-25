@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+
 #include <nuttx/config.h>
 
 #include <stdio.h>
@@ -60,7 +61,7 @@
 #define PAYLOAD_LEN                 9U
 #define CRC_LEN                     2U
 
-#define STX3_DEVNAME "/dev/ttyS1" //CONFIG_STX3_UART_DEVNAME
+#define STX3_DEVNAME  CONFIG_STX3_UART_DEVNAME
 
 typedef enum {
     BURST_RUNNING,
@@ -86,18 +87,76 @@ static bool read_uart_data(uint8_t *data, size_t len);
 static inline void stx3_disable(void);
 static inline void stx3_enable(void);
 static void print_buffer_hex(const uint8_t *buffer, size_t size);
+static inline bool stx3_wakeup(bool enable);
+static inline int stx3_get_cts_status(void);
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 static inline void stx3_disable(void)
 {
-    printf("stx3_disable called\n");
+    printf("Disabling STX3 module\n");
+    int fd = open(CONFIG_STX3_RESET_DEVNAME, O_WRONLY);
+    if (fd < 0) {
+      perror("Failed to open reset GPIO");
+      return;
+    }
+    if (write(fd, "1", 1) != 1) {
+      perror("Failed to write to reset GPIO");
+    }
+    close(fd);
 }
 
 static inline void stx3_enable(void)
 {
     printf("stx3_enable called\n");
+    int fd = open(CONFIG_STX3_RESET_DEVNAME, O_WRONLY);
+    if (fd < 0) {
+      perror("Failed to open reset GPIO");
+      return;
+    }
+    if (write(fd, "0", 1) != 1) {
+      perror("Failed to write to reset GPIO");
+    }
+    close(fd);
+}
+
+static inline bool stx3_wakeup(bool enable)
+{
+  printf("stx3_rtx_assert called with enable = %d\n", enable);
+  int fd = open(CONFIG_STX3_RTS_DEVNAME, O_WRONLY);
+  if (fd < 0) {
+    perror("Failed to open reset GPIO");
+    return false;
+  }
+  if (write(fd, enable ? "0" : "1", 1) != 1) {
+    perror("Failed to write to reset GPIO");
+    close(fd);
+    return false;
+  }
+  close(fd);
+  return true;
+}
+
+static inline int stx3_get_cts_status(void)
+{
+  int fd;
+  char buf[1];
+
+  fd = open(CONFIG_STX3_CTS_DEVNAME, O_RDONLY | O_NONBLOCK);
+
+  if (fd < 0) {
+    perror("Failed to open CTS GPIO");
+    return -1;
+  }
+  if (read(fd, &buf[0], 1) != 1) {
+    perror("Failed to read CTS GPIO");
+    close(fd);
+    return -1;
+  }
+  close(fd);
+  return buf[0] - '0';
 }
 
 static inline uint16_t crc16_lsb_calc(const uint8_t *src, uint8_t size)
@@ -164,7 +223,19 @@ static bool send_uart_data(const uint8_t *data, size_t len)
       return ERROR;
   }
 
+  stx3_wakeup(true);
+  usleep(125000); // 125ms
+  
+  if (stx3_get_cts_status() == 1)
+  {
+    printf("CTS isn't low, cannot send data\n");
+    close(fd);
+    return ERROR;
+  }
+
   bytes_written = write(fd, data, len);
+  usleep(25000);
+  stx3_wakeup(false);
 
   if (bytes_written != (ssize_t)len)
   {
@@ -182,7 +253,7 @@ static bool read_uart_data(uint8_t *data, size_t len)
   ssize_t bytes_read;
   int fd;
 
-  fd = open(STX3_DEVNAME, O_RDONLY);
+  fd = open(STX3_DEVNAME, O_RDONLY | O_NONBLOCK); ;
   if (fd < 0)
   {
       printf("Failed to open UART device");
@@ -416,4 +487,9 @@ int stx3_configure(uint8_t channel, uint8_t num_bursts, uint8_t min_interval, ui
   }
 
   return -EXIT_FAILURE; 
+}
+
+void stx3_gpio_init(void)
+{
+  stx3_wakeup(false);
 }

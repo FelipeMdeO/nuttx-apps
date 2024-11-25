@@ -25,9 +25,6 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-#include <nuttx/compiler.h>
-
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -121,5 +118,7 @@ void stx3_reset(void);
  */
 
 int stx3_configure(uint8_t channel, uint8_t num_bursts, uint8_t min_interval, uint8_t max_interval);
+
+void stx3_gpio_init(void);
 
 #endif /* __APPS_SATELITAL_STX3_H */

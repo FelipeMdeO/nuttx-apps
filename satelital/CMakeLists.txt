@@ -18,16 +18,14 @@
 #
 # ##############################################################################
 
-if(CONFIG_SATELITAL_STX3_MODULE)
-    nuttx_add_application(
-        NAME
-        ${CONFIG_SATELITAL_STX3_PROGNAME}
-        SRCS
-        stx3_main.c
-        stx3.c
-        STACKSIZE
-        ${CONFIG_SATELITAL_STX3_STACKSIZE}
-        PRIORITY
-        ${CONFIG_SATELITAL_STX3_PRIORITY}
-    )
+if(CONFIG_SATELITAL_STX_MODULE)
+  nuttx_add_application(
+    NAME
+    ${CONFIG_SATELITAL_STX_MODULE_PROGNAME}
+    SRCS
+    stx3_main.c
+    STACKSIZE
+    ${CONFIG_SATELITAL_STX_MODULE_STACKSIZE}
+    PRIORITY
+    ${CONFIG_SATELITAL_STX_MODULE_PRIORITY})
 endif()

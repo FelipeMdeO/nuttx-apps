@@ -2,55 +2,68 @@
 # For a description of the syntax of this configuration file,
 # see the file kconfig-language.txt in the NuttX tools repository.
 #
-
 menu "Satelital"
 
-menuconfig  SATELITAL_STX3_MODULE
+menuconfig  SATELITAL_STX_MODULE
 	tristate "Global Star STX3 Satellite Module"
 	default n
 
+config SATELITAL_STX_MODULE
 	---help---
-		The STX3 Satellite Module offers robust satellite
-		connectivity through Globalstar's advanced STX3 technology. Designed
-		for reliable communication in remote and challenging environments,
-		this module enables seamless data transmission and reception between
-		the device and Globalstar's satellite network. It supports UART
-		communication protocols, ensuring compatibility and flexibility for
-		various applications such as IoT devices, asset tracking, and remote
-		monitoring systems. The STX3 module utilizes efficient power
-		management and secure data transfer methods to maintain continuous
-		and dependable satellite connections, making it an essential component
-		for enhancing connectivity in areas with limited or no terrestrial
-		network coverage.
+	The STX3 Satellite Module offers robust satellite
+	connectivity through Globalstar's advanced STX3 technology. Designed
+	for reliable communication in remote and challenging environments,
+	this module enables seamless data transmission and reception between
+	the device and Globalstar's satellite network. It supports UART
+	communication protocols, ensuring compatibility and flexibility for
+	various applications such as IoT devices, asset tracking, and remote
+	monitoring systems. The STX3 module utilizes efficient power
+	management and secure data transfer methods to maintain continuous
+	and dependable satellite connections, making it an essential component
+	for enhancing connectivity in areas with limited or no terrestrial
+	network coverage.
 
-if SATELITAL_STX3_MODULE
+if SATELITAL_STX_MODULE
 
-config STX3_UART_DEVNAME
-	string "device name"
-	default "/dev/ttyS1"
-	---help---
-		Select the UART port to use with the STX3 Satellite Module.
-
-config SATELITAL_STX3_PROGNAME
+config SATELITAL_STX_MODULE_PROGNAME
 	string "Program name"
 	default "stx3"
 	---help---
-		This is the name of the program that will be used when the ELF
+		This is the name of the program that will be used when the NSH ELF
 		program is installed.
 
-config SATELITAL_STX3_PRIORITY
-	int "Task priority"
+config SATELITAL_STX_MODULE_PRIORITY
+	int  "Task priority"
 	default 100
 
-config SATELITAL_STX3_STACKSIZE
+config SATELITAL_STX_MODULE_STACKSIZE
 	int "Stack size"
 	default DEFAULT_TASK_STACKSIZE
-
-config STX3_RESET_DEVNAME
-	string "reset device name"
+	
+config STX3_RTS_DEVNAME
+	string "rts gpio device name"
 	default "/dev/gpio0"
 	---help---
+		Select the device name for the rts pin of the STX3 Satellite Module.
+	
+config STX3_CTS_DEVNAME
+	string "cts gpio device name"
+	default "/dev/gpio1"
+	---help---
+		Select the device name for the cts pin of the STX3 Satellite Module.
+
+config STX3_RESET_DEVNAME
+	string "reset gpio device name"
+	default "/dev/gpio2"
+	---help---
 		Select the device name for the reset pin of the STX3 Satellite Module.
+
+
+config STX3_UART_DEVNAME
+	string "uart device name"
+	default "/dev/ttyS1"
+	---help---
+		Select the device name for the UART of the STX3 Satellite Module.
 
 config STX3_CHANNEL
 	int "Channel"
@@ -82,6 +95,6 @@ config STX3_MAX_INTERVAL
 		Select the maximum interval to use with the STX3 Satellite Module.
 		120 x 5 = 600 seconds = 10 minutes
 
-endif # SATELITAL_STX3_MODULE
+endif
 
-endmenu # Satelital
+endmenu

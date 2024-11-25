@@ -1,5 +1,5 @@
 ############################################################################
-# apps/satelital/Makefile
+# apps/examples/hello/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,13 +20,16 @@
 
 include $(APPDIR)/Make.defs
 
-# NSH Library
+# Hello, World! built-in application info
 
-CSRCS   = stx3.c stx3_main.c
+PROGNAME  = $(CONFIG_SATELITAL_STX_MODULE_PROGNAME)
+PRIORITY  = $(CONFIG_SATELITAL_STX_MODULE_PRIORITY)
+STACKSIZE = $(CONFIG_SATELITAL_STX_MODULE_STACKSIZE)
+MODULE    = $(CONFIG_SATELITAL_STX_MODULE)
 
-PROGNAME  = $(CONFIG_STX3_PROGNAME)
-PRIORITY  = $(CONFIG_STX3_PRIORITY)
-STACKSIZE = $(CONFIG_STX3_STACKSIZE)
-MODULE    = $(CONFIG_SATELITAL_STX3)
+# Hello, World! Example
+
+MAINSRC = stx3_main.c
+CSRCS += stx3.c
 
 include $(APPDIR)/Application.mk

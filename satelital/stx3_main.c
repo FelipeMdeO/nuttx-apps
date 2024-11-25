@@ -326,5 +326,6 @@ static int stx3_execute(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {  
+    stx3_gpio_init();
     return stx3_execute(argc, argv);
 }
