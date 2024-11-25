@@ -22,7 +22,9 @@
  * Included Files
  ****************************************************************************/
 
+#ifdef __NuttX__
 #include <nuttx/config.h>
+#endif
 
 #include <stdio.h>
 #include <stdint.h>

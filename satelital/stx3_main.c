@@ -21,7 +21,10 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#ifdef __NuttX__
 #include <nuttx/config.h>
+#endif
+
 #include <debug.h>
 
 #include <stdint.h>
@@ -75,6 +78,7 @@ static uint32_t stx3_cmd_get_esn(int argc, char **argv);
 static int stx3_cmd_abort_burst(int argc, char **argv);
 static int stx3_cmd_reset(int argc, char **argv);
 static int stx3_cmd_configure(int argc, char **argv);
+static void hex_dump(const unsigned char *data, int len);
 
 /****************************************************************************
  * Private Data
@@ -120,10 +124,6 @@ static int stx3_cmd_help(int argc, char **argv)
     return OK;
 }
 
-/****************************************************************************
- * Name: stx3_cmd_new_burst
- ****************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -138,7 +138,7 @@ static int stx3_cmd_help(int argc, char **argv)
  * @param len Number of bytes to display.
  */
 
-void hex_dump(const unsigned char *data, int len) {
+static void hex_dump(const unsigned char *data, int len) {
     for (int i = 0; i < len; i++) {
         printf("%02X ", data[i]);
         if ((i + 1) % 16 == 0) printf("\n");
@@ -146,7 +146,7 @@ void hex_dump(const unsigned char *data, int len) {
     printf("\n");
 }
 
-int stx3_cmd_new_burst(int byte_count, char *bytes[])
+static int stx3_cmd_new_burst(int byte_count, char *bytes[])
 {
     int ret;
 
