@@ -20,8 +20,8 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_INCLUDE_SMF_SMF_H_
-#define __APPS_INCLUDE_SMF_SMF_H_
+#ifndef __APPS_INCLUDE_SMF_SMF_H
+#define __APPS_INCLUDE_SMF_SMF_H
 
 /****************************************************************************
  * Included Files
@@ -32,14 +32,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
-#endif
 
 /**
  * @brief Macro to create a hierarchical state with initial transitions.
@@ -53,30 +45,30 @@ extern "C"
 
 #ifdef CONFIG_SMF_ANCESTOR_SUPPORT
 #  ifdef CONFIG_SMF_INITIAL_TRANSITION
-#    define SMF_CREATE_STATE(_entry, _run, _exit, _parent) \
-	{ \
-		.entry = (_entry), \
-		.run = (_run), \
-		.exit = (_exit), \
-		.parent = (_parent), \
-		.initial = NULL, \
-	}
+#    define SMF_CREATE_STATE(_entry, _run, _exit, _parent, _initial) \
+       { \
+         .entry   = (_entry), \
+         .run     = (_run), \
+         .exit    = (_exit), \
+         .parent  = (_parent), \
+         .initial = (_initial), \
+       }
 #  else
-#    define SMF_CREATE_STATE(_entry, _run, _exit, _parent) \
-	{ \
-		.entry = (_entry), \
-		.run = (_run), \
-		.exit = (_exit), \
-		.parent = (_parent), \
-	}
+#    define SMF_CREATE_STATE(_entry, _run, _exit, _parent, _initial) \
+       { \
+         .entry   = (_entry), \
+         .run     = (_run), \
+         .exit    = (_exit), \
+         .parent  = (_parent), \
+       }
 #  endif
 #else
-#  define SMF_CREATE_STATE(_entry, _run, _exit, _parent) \
-	{ \
-		.entry = (_entry), \
-		.run = (_run), \
-		.exit = (_exit), \
-	}
+#  define SMF_CREATE_STATE(_entry, _run, _exit, _parent, _initial) \
+     { \
+       .entry = (_entry), \
+       .run   = (_run), \
+       .exit  = (_exit), \
+     }
 #endif
 
 /**
@@ -87,10 +79,6 @@ extern "C"
  */
 #define SMF_CTX(o) ((struct smf_ctx *)o)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief enum for the return value of a state_execution function
  */
@@ -98,6 +86,15 @@ enum smf_state_result {
 	SMF_EVENT_HANDLED,
 	SMF_EVENT_PROPAGATE,
 };
+
+#undef EXTERN
+#if defined(__cplusplus)
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
+#endif
 
 /**
  * @brief Function pointer that implements a entry and exit actions
@@ -245,8 +242,8 @@ smf_get_current_executing_state(const struct smf_ctx *const ctx)
 }
 
 #undef EXTERN
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 
-#endif /* __APPS_INCLUDE_SMF_SMF_H_ */
+#endif /* __APPS_INCLUDE_SMF_SMF_H */
