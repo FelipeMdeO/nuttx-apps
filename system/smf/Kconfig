@@ -1,0 +1,28 @@
+# SMF (State Machine Framework) configuration options
+#
+# For syntax reference, see kconfig-language.txt in the NuttX tools repository.
+
+config APPS_SMF
+  bool "(SMF) support"
+  default n
+  ---help---
+    Enables the State Machine Framework (SMF) for implementing state machines
+
+if APPS_SMF
+
+config SMF_ANCESTOR_SUPPORT
+	bool "Enable ancestor/parent state support"
+	default n
+	---help---
+	  Enables support for parent/ancestor relationships between SMF states.
+	  Required for hierarchical state machines.
+
+config SMF_INITIAL_TRANSITION
+	bool "Enable initial transition support"
+	default n
+	depends on SMF_ANCESTOR_SUPPORT
+	---help---
+	  Enables support for initial transitions in hierarchical states.
+	  Depends on ancestor/parent state support.
+
+endif # APPS_SMF
