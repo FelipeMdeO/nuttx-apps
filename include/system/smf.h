@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/include/smf/smf.h
+ * apps/include/smf.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *

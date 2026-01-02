@@ -1,0 +1,29 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_SMF
+  tristate "State Machine Framework PSICC2 demo (HSM)"
+  default n
+  select NSH_BUILTIN_APPS
+  select APPS_SMF
+  select SMF_ANCESTOR_SUPPORT
+  select SMF_INITIAL_TRANSITION
+
+if EXAMPLES_SMF
+
+config EXAMPLES_SMF_PROGNAME
+  string "Program name"
+  default "hsm_psicc2"
+
+config EXAMPLES_SMF_PRIORITY
+  int "Priority"
+  default 100
+
+config EXAMPLES_SMF_STACKSIZE
+  int "Stack size"
+  default 2048
+
+endif
+

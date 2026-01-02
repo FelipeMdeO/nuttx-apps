@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <smf/smf.h>
+#include <system/smf.h>
 
 #define LOG_ERR(fmt, ...) \
 	do { \
