@@ -1,0 +1,30 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_TFLITE_HELLO
+	tristate "TensorFlow Lite Micro \"Hello World\" example"
+	default n
+	depends on TFLITE_MICRO
+	---help---
+		Port of the upstream TFLM hello_world example: runs the sine
+		model (float and int8) with the reference kernels and prints
+		predictions in both decimal and raw IEEE-754 bit form so that
+		outputs can be compared bit-exactly across architectures.
+
+if EXAMPLES_TFLITE_HELLO
+
+config EXAMPLES_TFLITE_HELLO_PROGNAME
+	string "Program name"
+	default "tflite_hello"
+
+config EXAMPLES_TFLITE_HELLO_PRIORITY
+	int "Task priority"
+	default 100
+
+config EXAMPLES_TFLITE_HELLO_STACKSIZE
+	int "Stack size"
+	default 16384
+
+endif
