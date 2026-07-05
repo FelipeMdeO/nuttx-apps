@@ -1,0 +1,38 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+menuconfig TFLITE_MICRO
+	bool "TensorFlow Lite Micro"
+	default n
+	depends on HAVE_CXX
+	---help---
+		Enable TensorFlow Lite for Microcontrollers (TFLM), an inference
+		engine for running machine learning models on microcontrollers.
+		The source tree is imported from tensorflow/tflite-micro upstream
+		(see scripts/sync_from_tflite_micro.sh).
+
+if TFLITE_MICRO
+
+config TFLITE_MICRO_ARENA_SIZE
+	int "Tensor arena size (bytes)"
+	default 65536
+	---help---
+		Default size of the tensor arena (static working memory) used by
+		applications. Individual applications may override this value.
+
+choice
+	prompt "TFLM kernel backend"
+	default TFLITE_MICRO_KERNEL_REFERENCE
+	---help---
+		Kernel implementation used by the interpreter. Only the portable
+		reference kernels are available for now; architecture-optimized
+		backends may be added later as opt-in specializations.
+
+config TFLITE_MICRO_KERNEL_REFERENCE
+	bool "Reference kernels (portable, unoptimized)"
+
+endchoice
+
+endif # TFLITE_MICRO
