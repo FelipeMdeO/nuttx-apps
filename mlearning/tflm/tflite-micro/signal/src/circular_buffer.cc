@@ -19,6 +19,10 @@ limitations under the License.
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef ASSERT
+#undef ASSERT
+#endif
+
 #define ASSERT assert
 
 namespace tflite {
