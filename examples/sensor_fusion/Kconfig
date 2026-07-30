@@ -6,19 +6,30 @@
 config EXAMPLES_SENSOR_FUSION
 	bool "Sensor Fusion Example"
 	default n
+	depends on UORB
 	---help---
-		Sensor fusion example that combines gyro and accelerometer data
-		using the Madgwick algorithm to provide yaw, pitch and roll angles.
+		Sensor fusion example that combines the accelerometer and gyroscope
+		uORB topics using the Madgwick algorithm to provide yaw, pitch and
+		roll angles.
+
+		The Fusion library implementing the algorithm is downloaded at build
+		time from https://github.com/xioTechnologies/Fusion, so network
+		access is required when configuring this example.
 
 if EXAMPLES_SENSOR_FUSION
 
 config EXAMPLES_SENSOR_FUSION_SAMPLES
 	int "Number of samples to acquire"
 	default 100
+	---help---
+		Default number of samples to print before exiting.  Zero runs until
+		the task is killed.  It can be overridden by the first command line
+		argument.
 
 config EXAMPLES_SENSOR_FUSION_SAMPLE_RATE
 	int "Sample rate in ms"
 	default 100
+	range 1 1000
 
 config EXAMPLES_SENSOR_FUSION_PROGNAME
 	string "Program name"
