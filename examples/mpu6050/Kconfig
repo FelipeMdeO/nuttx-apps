@@ -1,0 +1,48 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_MPU6050
+	bool "MPU6050 uORB example"
+	default n
+	depends on SENSORS_MPU6050 && UORB
+	---help---
+		Subscribe to the accelerometer and gyroscope uORB topics
+		published by the MPU6050 driver and print the six axes.
+
+if EXAMPLES_MPU6050
+
+config EXAMPLES_MPU6050_SAMPLES
+	int "Number of samples to acquire"
+	default 20
+	---help---
+		Default number of samples to print before exiting.  Zero runs
+		until the task is killed.  It can be overridden by the first
+		command line argument.
+
+config EXAMPLES_MPU6050_FREQUENCY
+	int "Sampling frequency in Hz"
+	default 10
+	range 1 1000
+	---help---
+		Frequency requested from both topics.  The MPU6050 driver
+		configures the device for 100 Hz, so higher values will repeat
+		samples.
+
+config EXAMPLES_MPU6050_PROGNAME
+	string "Program name"
+	default "mpu6050"
+	---help---
+		This is the name of the program that will be used when the NSH
+		ELF program is installed.
+
+config EXAMPLES_MPU6050_PRIORITY
+	int "MPU6050 example task priority"
+	default 100
+
+config EXAMPLES_MPU6050_STACKSIZE
+	int "MPU6050 example stack size"
+	default DEFAULT_TASK_STACKSIZE
+
+endif
