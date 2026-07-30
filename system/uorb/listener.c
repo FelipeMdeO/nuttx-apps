@@ -200,15 +200,41 @@ static int listener_create_dir(FAR char *dir, size_t size)
 static int listener_subscribe(FAR struct listen_object_s *tmp,
                               bool nonwakeup)
 {
+  int flags;
+  int fd;
+
   if (nonwakeup)
     {
-      return orb_subscribe_multi_nonwakeup(tmp->object.meta,
-                                           tmp->object.instance);
+      fd = orb_subscribe_multi_nonwakeup(tmp->object.meta,
+                                         tmp->object.instance);
     }
   else
     {
-      return orb_subscribe_multi(tmp->object.meta, tmp->object.instance);
+      fd = orb_subscribe_multi(tmp->object.meta, tmp->object.instance);
     }
+
+  if (fd < 0)
+    {
+      return fd;
+    }
+
+  /* A sensor whose lower half only implements fetch() never pushes a sample
+   * into the circular buffer: the upper half reads the device from read()
+   * and reports POLLIN only when the descriptor is non-blocking, and would
+   * otherwise wait forever on a sample that nobody ever posts.  Such a
+   * topic is therefore invisible to the listener unless O_NONBLOCK is set.
+   *
+   * This costs nothing for sensors that do push their samples: neither
+   * sensor_poll() nor sensor_read() looks at O_NONBLOCK on that path.
+   */
+
+  flags = fcntl(fd, F_GETFL, 0);
+  if (flags >= 0)
+    {
+      fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    }
+
+  return fd;
 }
 
 /****************************************************************************
@@ -897,6 +923,8 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
 
   while ((!nb_msgs || nb_recv_msgs < nb_msgs) && !g_should_exit)
     {
+      orb_abstime start = orb_absolute_time();
+
       if (poll(&fds[0], nb_objects, timeout * 1000) > 0)
         {
           i = 0;
@@ -938,6 +966,23 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
           uorbinfo_raw("Waited for %d seconds without a message. "
                        "Giving up. err:%d", timeout, errno);
           break;
+        }
+
+      /* Keep the requested rate.  The upper half accepts SNIOC_SET_INTERVAL
+       * but only applies it to samples that are pushed into the circular
+       * buffer, so a fetch() only sensor is otherwise read as fast as this
+       * loop runs.  Sleeping the remainder of the period is a no-op when
+       * poll() has already waited for it.
+       */
+
+      if (interval != 0)
+        {
+          orb_abstime elapsed = orb_absolute_time() - start;
+
+          if (elapsed < (orb_abstime)interval)
+            {
+              usleep((unsigned)((orb_abstime)interval - elapsed));
+            }
         }
     }
 

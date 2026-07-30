@@ -16,10 +16,18 @@ config UORB_PRIORITY
 
 config UORB_STACKSIZE
 	int "stack size"
+	default 4096 if UORB_FORMAT
 	default DEFAULT_TASK_STACKSIZE
+	---help---
+		With UORB_FORMAT enabled the listener needs around 2.2KB, measured
+		with STACK_COLORATION: orb_info() prints through the "%pB"
+		extension, which nests a second formatting pass.  That does not fit
+		in a DEFAULT_TASK_STACKSIZE of 2048, and the overflow corrupts
+		memory outside the task rather than failing cleanly.
 
 config UORB_FORMAT
 	bool
+	select LIBC_PRINT_EXTENSION
 	default n
 
 config UORB_LISTENER
