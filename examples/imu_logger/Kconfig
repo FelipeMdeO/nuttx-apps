@@ -64,6 +64,13 @@ config EXAMPLES_IMU_LOGGER_PRIORITY
 
 config EXAMPLES_IMU_LOGGER_STACKSIZE
 	int "IMU logger stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 4096
+	---help---
+		fopen()/fprintf() on a littlefs file, six floating point %.6f
+		conversions per CSV row and the uORB subscriptions together do
+		not fit in DEFAULT_TASK_STACKSIZE (2048): the overflow does not
+		fail cleanly, it corrupts memory outside the task and the crash
+		surfaces in an unrelated kernel primitive (observed: a
+		LoadProhibited fault inside nxsem_wait()).
 
 endif
