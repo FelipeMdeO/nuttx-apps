@@ -813,7 +813,7 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
   FAR struct pollfd *fds;
   char path[PATH_MAX];
   FAR int *recv_msgs;
-  float interval = topic_rate ? (1000000 / topic_rate) : 0;
+  unsigned interval = topic_rate ? (unsigned)(1000000.0f / topic_rate) : 0;
   int nb_recv_msgs = 0;
   FAR char *dir;
   int i = 0;
@@ -854,7 +854,7 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
 
       if (interval != 0)
         {
-          orb_set_interval(fd, (unsigned)interval);
+          orb_set_interval(fd, interval);
 
           if (topic_latency != 0)
             {
@@ -897,6 +897,8 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
 
   while ((!nb_msgs || nb_recv_msgs < nb_msgs) && !g_should_exit)
     {
+      orb_abstime start = orb_absolute_time();
+
       if (poll(&fds[0], nb_objects, timeout * 1000) > 0)
         {
           i = 0;
@@ -938,6 +940,16 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
           uorbinfo_raw("Waited for %d seconds without a message. "
                        "Giving up. err:%d", timeout, errno);
           break;
+        }
+
+      if (interval != 0)
+        {
+          orb_abstime elapsed = orb_absolute_time() - start;
+
+          if (elapsed < interval)
+            {
+              usleep(interval - elapsed);
+            }
         }
     }
 
