@@ -1,0 +1,69 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_IMU_LOGGER
+	bool "IMU CSV logger"
+	default n
+	depends on SENSORS_MPU6050 && UORB && INPUT_BUTTONS
+	---help---
+		Subscribe to the accelerometer and gyroscope uORB topics published
+		by the MPU6050 driver and log them to CSV files, one row per
+		sample, toggled on and off by a button press.  Meant to collect
+		motion gesture datasets for training an on-device model.
+
+if EXAMPLES_IMU_LOGGER
+
+config EXAMPLES_IMU_LOGGER_FREQUENCY
+	int "Sampling frequency in Hz"
+	default 25
+	range 1 100
+	---help---
+		Frequency requested from both topics while recording.  The
+		MPU6050 driver configures the device for 100 Hz, so higher
+		values will repeat samples.
+
+config EXAMPLES_IMU_LOGGER_MOUNTPOINT
+	string "Directory where CSV files are written"
+	default "/data"
+	---help---
+		Must already be mounted on a writable filesystem, e.g. the
+		littlefs volume set up by board_spiflash_init().
+
+config EXAMPLES_IMU_LOGGER_BUTTON_DEVPATH
+	string "Button device path"
+	default "/dev/buttons"
+
+config EXAMPLES_IMU_LOGGER_BUTTON_MASK
+	hex "Button bitmask that toggles recording"
+	default 0x1
+	---help---
+		Matched against the buttonset read from
+		EXAMPLES_IMU_LOGGER_BUTTON_DEVPATH.  The default is BOOT on the
+		esp32s3-devkit, the only button board_buttons() reports there.
+
+config EXAMPLES_IMU_LOGGER_LED_DEVPATH
+	string "Status LED device path (empty to disable)"
+	default "/dev/leds0"
+	---help---
+		A ws2812-compatible RGB LED device, lit green while recording and
+		red otherwise.  Leave empty to skip the status LED entirely; a
+		device that fails to open is also just skipped.
+
+config EXAMPLES_IMU_LOGGER_PROGNAME
+	string "Program name"
+	default "imu_logger"
+	---help---
+		This is the name of the program that will be used when the NSH
+		ELF program is installed.
+
+config EXAMPLES_IMU_LOGGER_PRIORITY
+	int "IMU logger task priority"
+	default 100
+
+config EXAMPLES_IMU_LOGGER_STACKSIZE
+	int "IMU logger stack size"
+	default DEFAULT_TASK_STACKSIZE
+
+endif
