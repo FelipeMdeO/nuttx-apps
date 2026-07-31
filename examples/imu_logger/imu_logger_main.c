@@ -298,8 +298,22 @@ int main(int argc, FAR char *argv[])
                       accel.x, accel.y, accel.z,
                       gyro.x, gyro.y, gyro.z,
                       (uint64_t)start);
-              fflush(file);
               session_samples++;
+
+              /* Flushing every row makes each fprintf() a synchronous
+               * littlefs write, which alone takes longer than the sampling
+               * period and starves the usleep() below: the loop then runs
+               * at the write speed of the flash instead of the requested
+               * rate.  Flush about once a second instead, which bounds
+               * data loss on a power cut to roughly the last second of the
+               * session.
+               */
+
+              if (session_samples % CONFIG_EXAMPLES_IMU_LOGGER_FREQUENCY
+                  == 0)
+                {
+                  fflush(file);
+                }
             }
         }
 
