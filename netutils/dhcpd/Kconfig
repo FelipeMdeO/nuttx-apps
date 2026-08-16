@@ -56,11 +56,19 @@ config NETUTILS_DHCPD_MAXLEASES
 
 config NETUTILS_DHCPD_STARTIP
 	hex "First IP address"
-	default 0x0a000002
+	default 0xc0a80402
+	---help---
+		First address of the pool handed out by the server.
+
+		The default subnet (192.168.4.0/24) is deliberately kept apart
+		from NETINIT_IPADDR (default 10.0.0.2/24).  A board serving DHCP
+		on one interface while another interface is configured on the
+		same subnet ends up with two interfaces claiming that prefix,
+		and traffic to a peer may be routed out of the wrong one.
 
 config NETUTILS_DHCPD_ROUTERIP
 	hex "Router IP (0 to disable)"
-	default 0x0a000001
+	default 0xc0a80401
 
 config NETUTILS_DHCPD_NETMASK
 	hex "Netmask (0 to disable)"
